@@ -1,0 +1,16 @@
+plugins {
+    id 'java'
+}
+
+group 'com.github.dakyskye'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'com.github.Dansoftowner:jSystemThemeDetector:3.7'
+    implementation group: 'org.json', name: 'json', version: '20210307'
+}
