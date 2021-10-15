@@ -37,15 +37,13 @@ public class App {
     }
 
     public static void listenToThemeChange() {
-        detector.registerListener(isDark -> {
-            SwingUtilities.invokeLater(() -> {
-                if (isDark) {
-                    icon.setImage(toolkit.getImage("./src/main/resources/github_mark_plus_light.png"));
-                } else {
-                    icon.setImage(toolkit.getImage("./src/main/resources/github_mark_plus.png"));
-                }
-            });
-        });
+        detector.registerListener(isDark -> SwingUtilities.invokeLater(() -> {
+            if (isDark) {
+                icon.setImage(toolkit.getImage("./src/main/resources/github_mark_plus_light.png"));
+            } else {
+                icon.setImage(toolkit.getImage("./src/main/resources/github_mark_plus.png"));
+            }
+        }));
     }
 
     public void listenAndNotify() {
@@ -76,7 +74,7 @@ public class App {
         private static int currentCount = 0;
 
         public static void push(int count) {
-            if (count == 0 || count <= currentCount) {
+            if (count <= currentCount) {
                 return;
             }
 
