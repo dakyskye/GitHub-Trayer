@@ -8,69 +8,72 @@ import java.awt.*;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class App {
-    private static TrayIcon icon;
-    private static final Toolkit toolkit = Toolkit.getDefaultToolkit();
-    private static final OsThemeDetector detector = OsThemeDetector.getDetector();
-    private static final String title = "GitHub Trayer";
+public final class App {
+    private static final App instance = new App();
 
-    public App() throws Exception {
-        if (!SystemTray.isSupported()) {
-            throw new Exception("system tray is not supported");
+    private final OsThemeDetector detector = OsThemeDetector.getDetector();
+    private final Toolkit toolkit = Toolkit.getDefaultToolkit();
+    private final TrayIcon icon = new TrayIcon(getImage(detector.isDark()));
+
+    public static App getInstance() {
+        return instance;
+    }
+
+    private App() {
+        try {
+            final SystemTray tray = SystemTray.getSystemTray();
+
+            icon.setImageAutoSize(true);
+            tray.add(icon);
+
+            detector.registerListener(isDark -> SwingUtilities.invokeLater(() -> icon.setImage(getImage(isDark))));
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            System.exit(1);
         }
+    }
 
-        SystemTray tray = SystemTray.getSystemTray();
-        Image image;
-
-        if (detector.isDark()) {
-            image = toolkit.getImage("./src/main/resources/github_mark_plus_light.png");
+    private Image getImage(final boolean isDark) {
+        if (isDark) {
+            return toolkit.getImage("./src/main/resources/github_mark_plus_light.png");
         } else {
-            image = toolkit.getImage("./src/main/resources/github_mark_plus.png");
+            return toolkit.getImage("./src/main/resources/github_mark_plus.png");
         }
-
-        icon = new TrayIcon(image, title);
-        icon.setImageAutoSize(true);
-
-        tray.add(icon);
-
-        detector.registerListener(isDark -> SwingUtilities.invokeLater(() -> {
-            if (isDark) {
-                icon.setImage(toolkit.getImage("./src/main/resources/github_mark_plus_light.png"));
-            } else {
-                icon.setImage(toolkit.getImage("./src/main/resources/github_mark_plus.png"));
-            }
-        }));
     }
 
     public void listenAndNotify() {
         Timer timer = new Timer();
-        timer.schedule(new SubscribeTask(), 0, 12 * 1000);
+        timer.schedule(new SubscribeTask(icon), 0, 12 * 1000);
     }
 
-    static class SubscribeTask extends TimerTask {
-        final private ProcessBuilder processBuilder = new ProcessBuilder("gh", "api", "notifications");
+    private static class SubscribeTask extends TimerTask {
+        private final ProcessBuilder processBuilder = new ProcessBuilder("gh", "api", "notifications");
+        private final TrayIcon icon;
+
+        public SubscribeTask(final TrayIcon icon) {
+            this.icon = icon;
+        }
 
         @Override
         public void run() {
-            Process proc;
-            JSONArray array;
-            try {
-                proc = processBuilder.start();
-                array = new JSONArray(new String(proc.getInputStream().readAllBytes()));
-            } catch (Exception e) {
-                e.printStackTrace();
-                return;
-            }
-
-            Notification.push(array.length());
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    Process proc = processBuilder.start();
+                    JSONArray array = new JSONArray(new String(proc.getInputStream().readAllBytes()));
+                    Notification.push(icon, array.length());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
         }
     }
 
-    static abstract class Notification {
+    private static abstract class Notification {
         private static int currentCount = 0;
 
-        public static void push(int count) {
+        public static void push(final TrayIcon icon, final int count) {
             if (count <= currentCount) {
+                currentCount = count;
                 return;
             }
 
@@ -83,7 +86,7 @@ public class App {
             }
 
             currentCount = count;
-            icon.displayMessage(title, msg, TrayIcon.MessageType.INFO);
+            icon.displayMessage("GitHub Trayer", msg, TrayIcon.MessageType.INFO);
         }
     }
 }
