@@ -31,12 +31,8 @@ public class App {
         icon = new TrayIcon(image, title);
         icon.setImageAutoSize(true);
 
-        listenToThemeChange();
-
         tray.add(icon);
-    }
 
-    public static void listenToThemeChange() {
         detector.registerListener(isDark -> SwingUtilities.invokeLater(() -> {
             if (isDark) {
                 icon.setImage(toolkit.getImage("./src/main/resources/github_mark_plus_light.png"));
